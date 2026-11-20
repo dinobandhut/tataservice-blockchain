@@ -16,6 +16,7 @@ if [[ -f "${ROOT_DIR}/.env" ]]; then
   set +a
 fi
 
+GENESIS_GEN_IMAGE="${GENESIS_GEN_IMAGE:-ethpandaops/ethereum-genesis-generator:master}"
 EXEC_DIR="${ROOT_DIR}/network/execution"
 CONSENSUS_DIR="${ROOT_DIR}/network/consensus"
 DATA_DIR="${ROOT_DIR}/data"
@@ -90,13 +91,13 @@ node "${SCRIPT_DIR}/verify-genesis-supply.mjs"
 
 MNEMONIC_YAML="${DATA_DIR}/validator_keys/.genesis_mnemonic.yaml"
 if [[ -f "${MNEMONIC_YAML}" ]] && command -v docker >/dev/null 2>&1; then
-  echo "Generating Lighthouse genesis.ssz via eth2-testnet-genesis..."
+  echo "Generating Lighthouse genesis.ssz using ${GENESIS_GEN_IMAGE}..."
   docker run --rm \
     -v "${EXEC_DIR}:/exec:ro" \
     -v "${CONSENSUS_DIR}:/consensus" \
     -v "${MNEMONIC_YAML}:/tmp/mnemonics.yaml:ro" \
     --entrypoint eth2-testnet-genesis \
-    ethpandaops/ethereum-genesis-generator:latest \
+    "${GENESIS_GEN_IMAGE}" \
     deneb \
     --config /consensus/config.yaml \
     --eth1-config /exec/genesis.json \
