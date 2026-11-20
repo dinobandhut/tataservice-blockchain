@@ -96,19 +96,39 @@ if [[ -f "${MNEMONIC_YAML}" ]] && command -v docker >/dev/null 2>&1; then
     -v "${EXEC_DIR}:/exec:ro" \
     -v "${CONSENSUS_DIR}:/consensus" \
     -v "${MNEMONIC_YAML}:/tmp/mnemonics.yaml:ro" \
-    --entrypoint eth2-testnet-genesis \
+    --entrypoint /bin/sh \
     "${GENESIS_GEN_IMAGE}" \
-    deneb \
-    --config /consensus/config.yaml \
-    --eth1-config /exec/genesis.json \
-    --preset-phase0 mainnet \
-    --preset-altair mainnet \
-    --preset-bellatrix mainnet \
-    --preset-capella mainnet \
-    --preset-deneb mainnet \
-    --mnemonics /tmp/mnemonics.yaml \
-    --tranches-dir /tmp/tranches \
-    --state-output /consensus/genesis.ssz
+    -c '
+      if command -v eth-genesis-state-generator >/dev/null 2>&1; then
+        exec eth-genesis-state-generator beaconchain \
+          --config /consensus/config.yaml \
+          --eth1-config /exec/genesis.json \
+          --mnemonics /tmp/mnemonics.yaml \
+          --state-output /consensus/genesis.ssz
+      elif command -v eth-beacon-genesis >/dev/null 2>&1; then
+        exec eth-beacon-genesis beaconchain \
+          --config /consensus/config.yaml \
+          --eth1-config /exec/genesis.json \
+          --mnemonics /tmp/mnemonics.yaml \
+          --state-output /consensus/genesis.ssz
+      elif command -v eth2-testnet-genesis >/dev/null 2>&1; then
+        exec eth2-testnet-genesis deneb \
+          --config /consensus/config.yaml \
+          --eth1-config /exec/genesis.json \
+          --preset-phase0 mainnet \
+          --preset-altair mainnet \
+          --preset-bellatrix mainnet \
+          --preset-capella mainnet \
+          --preset-deneb mainnet \
+          --mnemonics /tmp/mnemonics.yaml \
+          --tranches-dir /tmp/tranches \
+          --state-output /consensus/genesis.ssz
+      else
+        echo "ERROR: No consensus genesis generator binary found in container" >&2
+        ls -la /usr/local/bin /usr/bin >&2
+        exit 1
+      fi
+    '
 
   rm -f "${MNEMONIC_YAML}"
   echo "Generated ${CONSENSUS_DIR}/genesis.ssz and removed ephemeral mnemonic yaml."
