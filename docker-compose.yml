@@ -48,7 +48,7 @@ services:
     networks:
       - tata-net
     healthcheck:
-      test: ["CMD-SHELL", "geth attach --exec 'eth.chainId()' http://127.0.0.1:8545 | grep -qiE '0xc5c71|810161'"]
+      test: ["CMD", "geth", "attach", "--exec", "eth.blockNumber", "http://127.0.0.1:8545"]
       interval: 10s
       timeout: 5s
       retries: 10
