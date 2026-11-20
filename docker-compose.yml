@@ -92,16 +92,38 @@ services:
       timeout: 5s
       retries: 10
 
+  lighthouse-vc-init:
+    image: sigp/lighthouse:v6.0.1
+    container_name: tata-lighthouse-vc-init
+    volumes:
+      - ./data/lighthouse-vc:/root/.lighthouse
+      - ./data/validator_keys:/keys:ro
+      - ./network/consensus:/consensus:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        if [ ! -f /root/.lighthouse/validators/validator_definitions.yml ] && [ -d /keys/keys ]; then
+          lighthouse account validator import \
+            --datadir=/root/.lighthouse \
+            --testnet-dir=/consensus \
+            --directory=/keys/keys \
+            --password-file=/keys/.keystore_password \
+            --reuse-password
+        fi
+    restart: "no"
+
   lighthouse-vc:
     image: sigp/lighthouse:v6.0.1
     container_name: tata-lighthouse-vc
     depends_on:
+      lighthouse-vc-init:
+        condition: service_completed_successfully
       lighthouse-bn:
         condition: service_healthy
     restart: unless-stopped
     volumes:
       - ./data/lighthouse-vc:/root/.lighthouse
-      - ./data/validator_keys:/keys:ro
       - ./network/consensus:/consensus:ro
     command:
       - lighthouse
