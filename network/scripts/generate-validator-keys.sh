@@ -51,6 +51,7 @@ echo "Generating ${VALIDATOR_COUNT} encrypted EIP-2335 keystores using ${GENESIS
 rm -rf "${OUTPUT_DIR}/generated" "${OUTPUT_DIR}/keys" "${OUTPUT_DIR}/secrets"
 
 docker run --rm \
+  -e GOMAXPROCS=1 \
   -v "${OUTPUT_DIR}:/out" \
   --entrypoint eth2-val-tools \
   "${GENESIS_GEN_IMAGE}" \
@@ -58,8 +59,7 @@ docker run --rm \
   --out-loc /out/generated \
   --source-min 0 \
   --source-max "${VALIDATOR_COUNT}" \
-  --source-mnemonic "${MNEMONIC}" \
-  --withdrawal-address "${WITHDRAWAL_ADDRESS}"
+  --source-mnemonic "${MNEMONIC}"
 
 mkdir -p "${OUTPUT_DIR}/keys" "${OUTPUT_DIR}/secrets"
 cp -a "${OUTPUT_DIR}/generated/keys/." "${OUTPUT_DIR}/keys/"
