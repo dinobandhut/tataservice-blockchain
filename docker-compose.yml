@@ -5,7 +5,7 @@ services:
     volumes:
       - ./data/geth:/root/.ethereum
       - ./network/execution/genesis.json:/genesis.json:ro
-    entrypoint: ["geth", "init", "--datadir=/root/.ethereum", "/genesis.json"]
+    entrypoint: ["geth", "init", "--state.scheme=path", "--datadir=/root/.ethereum", "/genesis.json"]
     restart: "no"
 
   geth:
@@ -48,10 +48,11 @@ services:
     networks:
       - tata-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}' --header='Content-Type: application/json' http://127.0.0.1:8545 | grep -q 0xc5c71"]
+      test: ["CMD-SHELL", "geth attach --exec 'eth.chainId()' http://127.0.0.1:8545 | grep -q 810161"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 15s
 
   lighthouse-bn:
     image: sigp/lighthouse:v6.0.1
@@ -87,10 +88,11 @@ services:
     networks:
       - tata-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5052/eth/v1/node/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5052/eth/v1/node/health || exec 3<>/dev/tcp/127.0.0.1/5052"]
       interval: 15s
       timeout: 5s
       retries: 10
+      start_period: 20s
 
   lighthouse-vc:
     image: sigp/lighthouse:v6.0.1
