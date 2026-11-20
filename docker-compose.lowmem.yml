@@ -1,0 +1,46 @@
+# Low-Memory Override for 1 GB RAM + 4 GB Swap VPS (e.g. Oracle E2.1.Micro)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.lowmem.yml up -d
+services:
+  geth:
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=810161
+      - --syncmode=full
+      - --gcmode=full
+      - --cache=128
+      - --state.scheme=path
+      - --http
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --ws
+      - --ws.addr=0.0.0.0
+      - --ws.port=8546
+      - --ws.api=eth,net,web3
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.port=8551
+      - --authrpc.vhosts=*
+      - --authrpc.jwtsecret=/jwtsecret
+    mem_limit: 512m
+
+  lighthouse-bn:
+    mem_limit: 420m
+
+  lighthouse-vc:
+    mem_limit: 160m
+
+  postgres:
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "work_mem=4MB", "-c", "max_connections=40"]
+    mem_limit: 256m
+
+  explorer-api:
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=256"
+    mem_limit: 300m
+
+  prometheus:
+    profiles: ["monitoring"]
+
+  grafana:
+    profiles: ["monitoring"]

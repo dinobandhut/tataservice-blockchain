@@ -1,0 +1,28 @@
+[Unit]
+Description=TataService Explorer API, Indexer & Hardened JSON-RPC Gateway
+After=network-online.target postgresql.service geth-tata.service
+Wants=postgresql.service geth-tata.service
+
+[Service]
+Type=simple
+User=tataservice
+Group=tataservice
+WorkingDirectory=/opt/tataservice/backend
+EnvironmentFile=/opt/tataservice/.env
+Environment=NODE_ENV=production
+Environment=PORT=4000
+Environment=NODE_OPTIONS=--max-old-space-size=256
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+ExecStart=/usr/bin/npx tsx src/server.ts
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tata-explorer-api
+
+[Install]
+WantedBy=multi-user.target

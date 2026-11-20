@@ -1,0 +1,6 @@
+{
+  "name": "TataService Blockchain",
+  "description": "EVM-compatible Layer-1 Proof-of-Stake blockchain ecosystem (TATA, Chain ID 810161) powered by Go-Ethereum, Lighthouse, PostgreSQL indexer, and Tata Explorer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

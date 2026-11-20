@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: 'tata-geth'
+    metrics_path: '/debug/metrics/prometheus'
+    static_configs:
+      - targets: ['geth:6060']
+
+  - job_name: 'tata-lighthouse-bn'
+    static_configs:
+      - targets: ['lighthouse-bn:5054']
+
+  - job_name: 'tata-lighthouse-vc'
+    static_configs:
+      - targets: ['lighthouse-vc:5064']
+
+  - job_name: 'tata-explorer-api'
+    static_configs:
+      - targets: ['explorer-api:4000']

@@ -1,0 +1,12 @@
+{
+  "name": "tataservice-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Core PoS deposit, delegated staking, wrapped native coin, and standard token contracts for TataService Blockchain (Chain ID 810161).",
+  "scripts": {
+    "bootstrap": "bash ./bootstrap.sh",
+    "build": "forge build",
+    "test": "forge test -vvv",
+    "gas-report": "forge test --gas-report"
+  }
+}

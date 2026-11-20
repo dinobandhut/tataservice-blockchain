@@ -1,0 +1,202 @@
+services:
+  geth-init:
+    image: ethereum/client-go:v1.14.12
+    container_name: tata-geth-init
+    volumes:
+      - ./data/geth:/root/.ethereum
+      - ./network/execution/genesis.json:/genesis.json:ro
+    entrypoint: ["geth", "init", "--datadir=/root/.ethereum", "/genesis.json"]
+    restart: "no"
+
+  geth:
+    image: ethereum/client-go:v1.14.12
+    container_name: tata-geth
+    depends_on:
+      geth-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    volumes:
+      - ./data/geth:/root/.ethereum
+      - ./data/jwt/jwtsecret:/jwtsecret:ro
+    ports:
+      - "30303:30303/tcp"
+      - "30303:30303/udp"
+      - "127.0.0.1:8545:8545"
+      - "127.0.0.1:8546:8546"
+    command:
+      - --datadir=/root/.ethereum
+      - --networkid=810161
+      - --syncmode=full
+      - --gcmode=archive
+      - --state.scheme=path
+      - --http
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --ws
+      - --ws.addr=0.0.0.0
+      - --ws.port=8546
+      - --ws.api=eth,net,web3
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.port=8551
+      - --authrpc.vhosts=*
+      - --authrpc.jwtsecret=/jwtsecret
+      - --metrics
+      - --metrics.addr=0.0.0.0
+      - --metrics.port=6060
+    networks:
+      - tata-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}' --header='Content-Type: application/json' http://127.0.0.1:8545 | grep -q 0xc5c71"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  lighthouse-bn:
+    image: sigp/lighthouse:v6.0.1
+    container_name: tata-lighthouse-bn
+    depends_on:
+      geth:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./data/lighthouse-bn:/root/.lighthouse
+      - ./network/consensus:/consensus:ro
+      - ./data/jwt/jwtsecret:/jwtsecret:ro
+    ports:
+      - "9000:9000/tcp"
+      - "9000:9000/udp"
+      - "127.0.0.1:5052:5052"
+    command:
+      - lighthouse
+      - bn
+      - --datadir=/root/.lighthouse
+      - --testnet-dir=/consensus
+      - --execution-endpoint=http://geth:8551
+      - --execution-jwt=/jwtsecret
+      - --http
+      - --http-address=0.0.0.0
+      - --http-port=5052
+      - --metrics
+      - --metrics-address=0.0.0.0
+      - --metrics-port=5054
+      - --suggested-fee-recipient=${TATA_VALIDATOR_OPS_ADDR:-0x7a7a000000000000000000000000000000000005}
+      - --subscribe-all-subnets
+      - --validator-monitor-auto
+    networks:
+      - tata-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5052/eth/v1/node/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  lighthouse-vc:
+    image: sigp/lighthouse:v6.0.1
+    container_name: tata-lighthouse-vc
+    depends_on:
+      lighthouse-bn:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./data/lighthouse-vc:/root/.lighthouse
+      - ./data/validator_keys:/keys:ro
+      - ./network/consensus:/consensus:ro
+    command:
+      - lighthouse
+      - vc
+      - --datadir=/root/.lighthouse
+      - --testnet-dir=/consensus
+      - --beacon-nodes=http://lighthouse-bn:5052
+      - --suggested-fee-recipient=${TATA_VALIDATOR_OPS_ADDR:-0x7a7a000000000000000000000000000000000005}
+      - --metrics
+      - --metrics-address=0.0.0.0
+      - --metrics-port=5064
+      - --graffiti=TataService-Validator
+    networks:
+      - tata-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tata-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tata_explorer}
+      POSTGRES_USER: ${POSTGRES_USER:-tata_indexer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_STRONG_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - tata-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tata_indexer} -d ${POSTGRES_DB:-tata_explorer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  explorer-api:
+    build:
+      context: ./backend
+    container_name: tata-explorer-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      geth:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      CHAIN_ID: 810161
+      GETH_HTTP_RPC_URL: http://geth:8545
+      GETH_WS_RPC_URL: ws://geth:8546
+      LIGHTHOUSE_BEACON_API_URL: http://lighthouse-bn:5052
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tata_indexer}:${POSTGRES_PASSWORD:-CHANGE_ME_STRONG_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-tata_explorer}
+      ADMIN_API_JWT_SECRET: ${ADMIN_API_JWT_SECRET:-CHANGE_ME_64_CHAR_RANDOM_HEX_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      INDEXER_ENABLED: "true"
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - tata-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/healthz | grep -q 810161"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: tata-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./data/prometheus:/prometheus
+    networks:
+      - tata-net
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: tata-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-CHANGE_ME_GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+    networks:
+      - tata-net
+
+networks:
+  tata-net:
+    driver: bridge

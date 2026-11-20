@@ -1,0 +1,32 @@
+[Unit]
+Description=TataService Blockchain Validator Client (Lighthouse VC)
+After=network-online.target lighthouse-bn-tata.service
+Requires=lighthouse-bn-tata.service
+
+[Service]
+Type=simple
+User=tataservice
+Group=tataservice
+EnvironmentFile=/opt/tataservice/.env
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+ExecStart=/usr/local/bin/lighthouse vc \
+  --datadir=/var/lib/tataservice/lighthouse-vc \
+  --testnet-dir=/opt/tataservice/network/consensus \
+  --beacon-nodes=http://127.0.0.1:5052 \
+  --suggested-fee-recipient=${TATA_VALIDATOR_OPS_ADDR} \
+  --metrics \
+  --metrics-address=127.0.0.1 \
+  --metrics-port=5064 \
+  --graffiti=TataService-Validator
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lighthouse-vc-tata
+
+[Install]
+WantedBy=multi-user.target

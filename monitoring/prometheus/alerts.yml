@@ -1,0 +1,54 @@
+groups:
+  - name: tataservice_blockchain_alerts
+    rules:
+      - alert: TataGethDown
+        expr: up{job="tata-geth"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Go-Ethereum execution client is unreachable"
+          description: "tata-geth has been down for more than 1 minute."
+
+      - alert: TataLighthouseBeaconDown
+        expr: up{job="tata-lighthouse-bn"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Lighthouse Beacon Node is unreachable"
+          description: "tata-lighthouse-bn has been down for more than 1 minute."
+
+      - alert: TataLighthouseValidatorDown
+        expr: up{job="tata-lighthouse-vc"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Lighthouse Validator Client is unreachable"
+          description: "tata-lighthouse-vc is down; validator attestations and block proposals may be missed."
+
+      - alert: TataExplorerApiDown
+        expr: up{job="tata-explorer-api"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tata Explorer & RPC Gateway API is down"
+
+      - alert: TataFinalityStalled
+        expr: changes(tata_consensus_finalized_epoch[20m]) == 0 and tata_consensus_finalized_epoch > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Beacon Chain finality has stalled"
+          description: "Finalized epoch has not advanced in the last 20 minutes."
+
+      - alert: TataRpcHighUpstreamErrorRate
+        expr: rate(tata_rpc_requests_total{status="upstream_error"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JSON-RPC upstream error rate on TataService gateway"

@@ -1,0 +1,63 @@
+{
+  "title": "TataService Blockchain Overview (Chain ID 810161)",
+  "uid": "tataservice-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Latest Indexed Block",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "tata_indexer_latest_block", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Finalized Epoch",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "tata_consensus_finalized_epoch", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Geth P2P Peers",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "p2p_peers{job=\"tata-geth\"}", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Beacon Connected Peers",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "libp2p_peers{job=\"tata-lighthouse-bn\"}", "refId": "A" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "JSON-RPC Requests / sec by Method",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (method) (rate(tata_rpc_requests_total[1m]))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "JSON-RPC p95 Latency (seconds)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, method) (rate(tata_rpc_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
