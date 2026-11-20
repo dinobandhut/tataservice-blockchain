@@ -42,6 +42,14 @@ if [[ ! -f "${JWT_FILE}" ]]; then
 fi
 chmod 600 "${JWT_FILE}"
 
+MNEMONIC_YAML="${DATA_DIR}/validator_keys/.genesis_mnemonic.yaml"
+if [[ -f "${CONSENSUS_DIR}/genesis.ssz" && ! -f "${MNEMONIC_YAML}" && "${FORCE_REGENERATE:-0}" != "1" ]]; then
+  echo "Genesis already exists (${CONSENSUS_DIR}/genesis.ssz). Preserving existing genesis.json & config.yaml."
+  echo "Validating mathematical supply invariant..."
+  node "${SCRIPT_DIR}/verify-genesis-supply.mjs"
+  exit 0
+fi
+
 echo "Updating ${EXEC_DIR}/genesis.json with exact 1,000,000,000 TATA allocation..."
 node -e '
 const fs = require("fs");

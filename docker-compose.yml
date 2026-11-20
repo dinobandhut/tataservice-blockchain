@@ -48,7 +48,7 @@ services:
     networks:
       - tata-net
     healthcheck:
-      test: ["CMD-SHELL", "geth attach --exec 'eth.chainId()' http://127.0.0.1:8545 | grep -q 810161"]
+      test: ["CMD-SHELL", "geth attach --exec 'eth.chainId()' http://127.0.0.1:8545 | grep -qiE '0xc5c71|810161'"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -88,7 +88,7 @@ services:
     networks:
       - tata-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5052/eth/v1/node/health || exec 3<>/dev/tcp/127.0.0.1/5052"]
+      test: ["CMD", "bash", "-c", "curl -fsS http://127.0.0.1:5052/eth/v1/node/health >/dev/null 2>&1 || exec 3<>/dev/tcp/127.0.0.1/5052"]
       interval: 15s
       timeout: 5s
       retries: 10
