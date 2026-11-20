@@ -48,9 +48,11 @@ if [[ -z "${MNEMONIC}" ]]; then
 fi
 
 echo "Generating ${VALIDATOR_COUNT} encrypted EIP-2335 keystores using ${GENESIS_GEN_IMAGE}..."
-rm -rf "${OUTPUT_DIR}/generated" "${OUTPUT_DIR}/keys" "${OUTPUT_DIR}/secrets"
+rm -rf "${OUTPUT_DIR}/generated" "${OUTPUT_DIR}/keys" "${OUTPUT_DIR}/secrets" 2>/dev/null || \
+  docker run --rm -v "${OUTPUT_DIR}:/out" --entrypoint rm "${GENESIS_GEN_IMAGE}" -rf /out/generated /out/keys /out/secrets
 
 docker run --rm \
+  -u "$(id -u):$(id -g)" \
   -e GOMAXPROCS=1 \
   -v "${OUTPUT_DIR}:/out" \
   --entrypoint eth2-val-tools \

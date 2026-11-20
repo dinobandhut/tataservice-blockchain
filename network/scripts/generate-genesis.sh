@@ -101,6 +101,7 @@ MNEMONIC_YAML="${DATA_DIR}/validator_keys/.genesis_mnemonic.yaml"
 if [[ -f "${MNEMONIC_YAML}" ]] && command -v docker >/dev/null 2>&1; then
   echo "Generating Lighthouse genesis.ssz using ${GENESIS_GEN_IMAGE}..."
   docker run --rm \
+    -u "$(id -u):$(id -g)" \
     -v "${EXEC_DIR}:/exec:ro" \
     -v "${CONSENSUS_DIR}:/consensus" \
     -v "${MNEMONIC_YAML}:/tmp/mnemonics.yaml:ro" \
