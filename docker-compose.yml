@@ -102,14 +102,12 @@ services:
         condition: service_healthy
     restart: unless-stopped
     volumes:
-      - ./data/lighthouse-vc:/root/.lighthouse
       - ./data/validator_keys/keys:/validators:rw
       - ./data/validator_keys/secrets:/secrets:ro
       - ./network/consensus:/consensus:ro
     command:
       - lighthouse
       - vc
-      - --datadir=/root/.lighthouse
       - --testnet-dir=/consensus
       - --validators-dir=/validators
       - --secrets-dir=/secrets
