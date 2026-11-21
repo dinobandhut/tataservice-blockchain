@@ -5,7 +5,7 @@ services:
     volumes:
       - ./data/geth:/root/.ethereum
       - ./network/execution/genesis.json:/genesis.json:ro
-    entrypoint: ["geth", "init", "--state.scheme=path", "--datadir=/root/.ethereum", "/genesis.json"]
+    entrypoint: ["/bin/sh", "-c", "[ -d /root/.ethereum/geth/chaindata ] && exit 0 || exec geth init --state.scheme=path --datadir=/root/.ethereum /genesis.json"]
     restart: "no"
 
   geth:
